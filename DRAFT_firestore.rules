@@ -1,0 +1,178 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global Hardened Primitives
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidEstadoKanban(val) {
+      return val is string && val.size() <= 40 && (
+        val == 'Nueva' ||
+        val == 'Me interesa' ||
+        val == 'CV Preparado' ||
+        val == 'CV Enviado' ||
+        val == 'Contactada' ||
+        val == 'Entrevista' ||
+        val == 'Seguimiento' ||
+        val == 'Conseguido' ||
+        val == 'Descartada'
+      );
+    }
+
+    function isValidCandidaturaKanban(data) {
+      return data.keys().hasAll([
+        'ownerId',
+        'empresa',
+        'puesto',
+        'localidad',
+        'fecha',
+        'fuente',
+        'enlace',
+        'estado',
+        'notas',
+        'fechaSeguimiento',
+        'contacto',
+        'resultado',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'ownerId',
+        'ofertaId',
+        'empresa',
+        'puesto',
+        'localidad',
+        'fecha',
+        'fuente',
+        'enlace',
+        'estado',
+        'notas',
+        'fechaSeguimiento',
+        'contacto',
+        'resultado',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      data.ownerId is string &&
+      data.ownerId.size() >= 1 &&
+      data.ownerId.size() <= 128 &&
+      data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+      data.ownerId == request.auth.uid &&
+      (!('ofertaId' in data) || (data.ofertaId is string && data.ofertaId.size() <= 128)) &&
+      data.empresa is string && data.empresa.size() >= 1 && data.empresa.size() <= 200 &&
+      data.puesto is string && data.puesto.size() >= 1 && data.puesto.size() <= 200 &&
+      data.localidad is string && data.localidad.size() >= 1 && data.localidad.size() <= 120 &&
+      data.fecha is string && data.fecha.size() >= 1 && data.fecha.size() <= 40 &&
+      data.fuente is string && data.fuente.size() <= 160 &&
+      data.enlace is string && data.enlace.size() <= 500 &&
+      isValidEstadoKanban(data.estado) &&
+      data.notas is string && data.notas.size() <= 2000 &&
+      data.fechaSeguimiento is string && data.fechaSeguimiento.size() <= 40 &&
+      data.contacto is string && data.contacto.size() <= 200 &&
+      data.resultado is string && data.resultado.size() <= 200 &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    function isValidProgresoPlan10(data) {
+      return data.keys().hasAll([
+        'ownerId',
+        'diaActual',
+        'tareasMarcadas',
+        'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'ownerId',
+        'diaActual',
+        'tareasMarcadas',
+        'updatedAt'
+      ]) &&
+      data.ownerId is string &&
+      data.ownerId.size() >= 1 &&
+      data.ownerId.size() <= 128 &&
+      data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+      data.ownerId == request.auth.uid &&
+      data.diaActual is int && data.diaActual >= 1 && data.diaActual <= 10 &&
+      data.tareasMarcadas is string && data.tareasMarcadas.size() <= 1000 &&
+      data.updatedAt is timestamp;
+    }
+
+    match /candidaturas/{candidaturaId} {
+      allow get: if isSignedIn() && isValidId(candidaturaId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+
+      allow create: if isSignedIn() &&
+        isValidId(candidaturaId) &&
+        isValidCandidaturaKanban(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if (
+        isSignedIn() &&
+        isValidId(candidaturaId) &&
+        isValidCandidaturaKanban(incoming()) &&
+        existing().ownerId == request.auth.uid &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'estado',
+            'notas',
+            'fechaSeguimiento',
+            'contacto',
+            'resultado',
+            'fuente',
+            'enlace',
+            'updatedAt'
+          ])
+        )
+      );
+
+      allow delete: if isSignedIn() && isValidId(candidaturaId) && existing().ownerId == request.auth.uid;
+    }
+
+    match /progresoPlan/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && userId == request.auth.uid && existing().ownerId == request.auth.uid;
+
+      allow create: if isSignedIn() &&
+        isValidId(userId) &&
+        userId == request.auth.uid &&
+        isValidProgresoPlan10(incoming()) &&
+        incoming().updatedAt == request.time;
+
+      allow update: if (
+        isSignedIn() &&
+        isValidId(userId) &&
+        userId == request.auth.uid &&
+        isValidProgresoPlan10(incoming()) &&
+        existing().ownerId == request.auth.uid &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().updatedAt == request.time && (
+          incoming().diff(existing()).affectedKeys().hasOnly([
+            'diaActual',
+            'tareasMarcadas',
+            'updatedAt'
+          ])
+        )
+      );
+    }
+  }
+}

@@ -1,0 +1,167 @@
+{
+  "entities": {
+    "CandidaturaKanban": {
+      "title": "CandidaturaKanban",
+      "description": "Registro de una candidatura laboral de Pilar en su tablero Kanban",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "UID de Firebase Auth de la propietaria",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ofertaId": {
+          "type": "string",
+          "description": "ID opcional de la oferta asociada",
+          "maxLength": 128
+        },
+        "empresa": {
+          "type": "string",
+          "description": "Nombre de la empresa",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "puesto": {
+          "type": "string",
+          "description": "Título del puesto",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "localidad": {
+          "type": "string",
+          "description": "Localidad del puesto",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "fecha": {
+          "type": "string",
+          "description": "Fecha de registro (YYYY-MM-DD)",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "fuente": {
+          "type": "string",
+          "description": "Fuente de la candidatura",
+          "maxLength": 160
+        },
+        "enlace": {
+          "type": "string",
+          "description": "URL o enlace de la oferta",
+          "maxLength": 500
+        },
+        "estado": {
+          "type": "string",
+          "description": "Estado en el tablero Kanban",
+          "enum": [
+            "Nueva",
+            "Me interesa",
+            "CV Preparado",
+            "CV Enviado",
+            "Contactada",
+            "Entrevista",
+            "Seguimiento",
+            "Conseguido",
+            "Descartada"
+          ],
+          "maxLength": 40
+        },
+        "notas": {
+          "type": "string",
+          "description": "Notas personales de seguimiento",
+          "maxLength": 2000
+        },
+        "fechaSeguimiento": {
+          "type": "string",
+          "description": "Fecha programada de seguimiento",
+          "maxLength": 40
+        },
+        "contacto": {
+          "type": "string",
+          "description": "Persona o canal de contacto",
+          "maxLength": 200
+        },
+        "resultado": {
+          "type": "string",
+          "description": "Resultado actual del proceso",
+          "maxLength": 200
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp de creación"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp de actualización"
+        }
+      },
+      "required": [
+        "ownerId",
+        "empresa",
+        "puesto",
+        "localidad",
+        "fecha",
+        "fuente",
+        "enlace",
+        "estado",
+        "notas",
+        "fechaSeguimiento",
+        "contacto",
+        "resultado",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ProgresoPlan10": {
+      "title": "ProgresoPlan10",
+      "description": "Estado del progreso del Plan de 10 Días de Pilar sincronizado en la nube",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "UID de la usuaria",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "diaActual": {
+          "type": "number",
+          "description": "Día activo del plan (1 a 10)"
+        },
+        "tareasMarcadas": {
+          "type": "string",
+          "description": "Lista de IDs de tareas completadas separadas por coma",
+          "maxLength": 1000
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp de actualización"
+        }
+      },
+      "required": [
+        "ownerId",
+        "diaActual",
+        "tareasMarcadas",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/candidaturas/{candidaturaId}": {
+      "schema": {
+        "$ref": "#/entities/CandidaturaKanban"
+      },
+      "description": "Colección de candidaturas laborales privadas de la usuaria"
+    },
+    "/progresoPlan/{userId}": {
+      "schema": {
+        "$ref": "#/entities/ProgresoPlan10"
+      },
+      "description": "Documento de progreso del plan de 10 días por usuaria"
+    }
+  }
+}

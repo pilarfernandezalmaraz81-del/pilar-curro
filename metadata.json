@@ -1,0 +1,6 @@
+{
+  "name": "Pilar Empleo IA — Plan de Empleo en Torrijos y Toledo",
+  "description": "Asistente personal de búsqueda de empleo y orientación laboral de 10 días para Pilar Fernández Almaraz en Torrijos, Toledo y comarca.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
